@@ -1,0 +1,34 @@
+---
+services:
+  wireguard:
+    image: lscr.io/linuxserver/wireguard:${WIREGUARD_VERSION}
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1003
+      - TZ=Europe/Warsaw
+      - SERVERURL=${WIREGUARD_PUB_DOMAIN}
+      - PEERS=3 #change to match how many devies you want to use Wireguard on
+      - ALLOWEDIPS=0.0.0.0/0 #optional
+    labels:
+      - traefik.enable=true
+      - traefik.udp.routers.vpn.entrypoints=vpn
+      - traefik.udp.routers.vpn.service=vpn-udp-svc
+      - traefik.udp.services.vpn-udp-svc.loadbalancer.server.port=51820
+    volumes:
+      - ${WIREGUARD_MAIN}/config:/config
+      - /lib/modules:/lib/modules #do not change
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    networks:
+      rproxy:
+        ipv4_address: 10.0.0.4
+    restart: unless-stopped
+
+# setting up static ips may be needed for every container in network
+networks:
+  rproxy:
+    external: true
